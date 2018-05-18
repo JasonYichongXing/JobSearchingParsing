@@ -9,6 +9,8 @@ Created on Thu May 17 22:02:50 2018
 from bs4 import BeautifulSoup as BS
 import requests
 import pprint
+from collections import defaultdict
+
 
 CAREER_URL = 'http://jobs.jpmorganchase.com/ListJobs/All/search/state/ny/country/us/city/new-york/sortdesc-postedon/page-'
 
@@ -44,10 +46,8 @@ def multipage_career_scraping(page_end, page_start = 1):
 
     
 def list_count(x_list):
-    count = {}
+    count = defaultdict(int)
     for n in x_list:
-        if n not in count:
-            count[n] = 0
         count[n] += 1
     return count
 
