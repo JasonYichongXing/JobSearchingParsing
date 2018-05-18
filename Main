@@ -1,127 +1,59 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Apr  3 19:19:42 2018
+Created on Thu May 17 22:02:50 2018
 
+@author: xingyichong
 """
+
 from bs4 import BeautifulSoup as BS
 import requests
-import numpy as np
-import webbrowser
+import pprint
 
-def JP_parsing(url = 'http://jobs.jpmorganchase.com/ListJobs/All/search/state/ny/country/us/city/new-york/sortdesc-postedon'):
-    # url = 'http://jobs.jpmorganchase.com/ListJobs/All/search/state/ny/country/us/city/new-york/sortdesc-postedon'
-    #http://jobs.jpmorganchase.com/ListJobs/All/search/state/ny/country/us/city/new-york/sortdesc-postedon/page-2
-    
-    response = requests.get(url)
+CAREER_URL = 'http://jobs.jpmorganchase.com/ListJobs/All/search/state/ny/country/us/city/new-york/sortdesc-postedon/page-'
+
+def career_scraping(page_count = 1):
+    response = requests.get(CAREER_URL + str(page_count))
     soup = BS(response.content, 'html.parser')
     
-    ors = soup.find_all('td', {'class':'coldisplayjobid'})
-    ors_Date = soup.find_all('td', {'class':'colpostedon'})
-
-    Post_Date = [x.text[2:].strip() for x in ors_Date]
-    Job_Name = [x.find('a').get('href').split('/')[4] for x in ors]
-
-    assert len(Post_Date) == len(Job_Name)
-    # 1
-    Date = np.array(Post_Date)
-    JobName = np.array(Job_Name)
+    soup_job_date = soup.find_all('td', {'class':'colpostedon'})
+    job_date = [content.text[2:].strip() for content in soup_job_date]
     
-    return ors, Date, JobName
-
-
-def open_JD(JobName_List, jname, orig_nmlist):
+    soup_job_name = soup.find_all('td', {'class':'coldisplayjobid'})
+    job_name = [content.find('a').get('href').split('/')[4] for content in soup_job_name]
     
-    Webf = 'http://jobs.jpmorganchase.com'
-    t = np.where(JobName_List==jname)[0][0]
-    Job_link = Webf + str(orig_nmlist[t].find('a').get('href'))
-    webbrowser.open_new_tab(Job_link)
+    if len(job_name) != len(job_date):
+        raise Exception('Job name and date length do not match')
     
-
-def job_count(JobName_List, npdatalist, toDate):
-    return len(JobName_List[npdatalist == toDate])
-
-
-Orgwb = 'http://jobs.jpmorganchase.com/ListJobs/All/search/state/ny/country/us/city/new-york/sortdesc-postedon/page-'
-
-N = 20
-O1 = J1 = D1 = np.empty([1], dtype = str)
-
-
-for _ in range(1, N):
-    wbsite = Orgwb + str(_)
-    Orglist, Datelist, Namelist = JP_parsing(wbsite)
-    D1 = np.concatenate((D1, Datelist))
-    J1 = np.concatenate((J1, Namelist))
-    #O1 = np.concatenate((O1, Orglist))
-
-for i in range(0, len(J1)-1):
-    print(D1[i], ': ', J1[i])
-
-for n in range(3, 10):
-    today = '4-' + str(n) + '-2018'
-    print(today, ': Total number of Job posted is', job_count(J1, D1, today), '!')
-
-
-# open_JD(J1, 'Mobile-QA-Analyst', O1)
-
-
-import datetime
-Td = datetime.date.today()
-back_N = 10
-
-def Day_list(Nday):
-    Td = datetime.date.today()
-    daylist=[]
-    for i in range(0,Nday+1):
-        Org_D = Td-datetime.timedelta(i)
-        m, d, y = Org_D.month, Org_D.day, Org_D.year
-        Fmt_D = str(m) + '-' + str(d) + '-' + str(y)
-        daylist.append(Fmt_D)
-    return daylist
-
-
-
-for n in Day_list(50):
-    print(n, ': Total number of Job posted is', job_count(J1, D1, n), '!')
-
-
-#single page testing:
+    job_dict = dict(zip(job_name, job_date))
     
-a, b, c= JP_parsing()
-open_JD(c, 'Mobile-QA-Analyst', a)     #test 'Mobile-QA-Analyst'
+    return job_dict
 
-Day = '4-8-2018'
-print(Day, ': Total number of Job is', job_count(c, b, Day), '!')
 
+def multipage_career_scraping(page_end, page_start = 1):
+    multi_dict = {}
+    for i in range(page_start, page_end + 1):
+        new_dict = career_scraping(i)
+        multi_dict = {**multi_dict, **new_dict}
+    return multi_dict
     
 
 
-'''
-# 2
-for i in range(0, len(Job_Name)-1):
-    print(Post_Date[i], ': ', Job_Name[i])
 
-x = [i=='4-6-2018' for i in Post_Date]
+    
+def list_count(x_list):
+    count = {}
+    for n in x_list:
+        if n not in count:
+            count[n] = 0
+        count[n] += 1
+    return count
 
-y = []
-for i in range(0, len(Job_Name)-1):
-    if x[i]:
-        y.append(Job_Name[i])
-'''
-
-#Job_map = {}
-#for i in range(0,len(Jobor_link)-1):
-#    Job_map[ors_Date[i].text[2:]] = Jobor_link[i].split('/')[4]  # key is not unique
-
-
-
-
-
-'''
-ors = soup.find_all('tr')
-Jobor_link = [x.get('href') for x in ors]
-#Jobor_title = [x.text for x in ors]
-
-x = [x for x in ors if x.get('href')[1]=='S']
-'''
+if __name__ == "__main__":
+    results = multipage_career_scraping(3)
+    pprint.pprint(results)
+    
+    date_list = results.values()
+    count_results = list_count(date_list)
+    pprint.pprint(count_results)
+    
