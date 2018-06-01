@@ -1,19 +1,20 @@
-    #!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Thu May 17 22:02:50 2018
 
 @author: xingyichong
 """
-
 from bs4 import BeautifulSoup as BS
 import requests
 from collections import defaultdict
 
 CAREER_URL = 'http://jobs.jpmorganchase.com/ListJobs/All/search/state/ny/country/us/city/new-york/sortdesc-postedon/page-'
 
-
 def singlepage_career(page_count = 1):
+    '''
+    The generetor to grab the jost date & job name for single page
+    '''
     response = requests.get(CAREER_URL + str(page_count))
     soup = BS(response.content, 'html.parser')
     
@@ -33,6 +34,9 @@ def multipages_career(page_end, page_start = 1):
 
 
 def dayjobcount(iterzip):
+    '''
+    Counting the total number of item in the first item(Job) of input iterator group by the second item(Date).
+    '''
     count = defaultdict(int)
     for job, date in iterzip:
         count[date] += 1
@@ -40,8 +44,8 @@ def dayjobcount(iterzip):
 
 
 if __name__ == "__main__":
-    N = 5
-    
+    N = 8
+   
     for i, (date, name) in enumerate(multipages_career(N)):
         print('({0}) {1}:  {2}'.format(i+1, name, date))
     # print the entire results, job name + post date
