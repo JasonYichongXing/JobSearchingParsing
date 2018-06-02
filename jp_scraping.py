@@ -38,7 +38,7 @@ def dayjobcount(iterzip):
     Counting the total number of item in the first item(Job) of input iterator group by the second item(Date).
     '''
     count = defaultdict(int)
-    for job, date in iterzip:
+    for _, date in iterzip:
         count[date] += 1
     return count
 
